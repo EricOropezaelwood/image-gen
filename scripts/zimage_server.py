@@ -33,9 +33,11 @@ async def load():
     print(f"[startup] Loading ZImagePipeline from {MODEL_PATH}...")
     pipe = DiffusionPipeline.from_pretrained(
         MODEL_PATH,
-        trust_remote_code=True,
         torch_dtype=torch.bfloat16,
-    ).to("cuda")
+    )
+    # enable_model_cpu_offload streams sub-models through VRAM one at a time,
+    # which lets this ~32 GB model run on a 16 GB card.
+    pipe.enable_model_cpu_offload()
     print("[startup] Model ready.")
 
 

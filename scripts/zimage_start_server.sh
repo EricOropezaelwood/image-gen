@@ -52,13 +52,31 @@ print("[setup] Download complete.")
 PYEOF
 fi
 
+# ── Free VRAM by pausing ComfyUI ─────────────────────────────────────────────
+COMFYUI_WAS_RUNNING=false
+if podman ps --format '{{.Names}}' 2>/dev/null | grep -q '^vivy-comfyui$'; then
+    COMFYUI_WAS_RUNNING=true
+    echo "[vram] Pausing vivy-comfyui to free GPU memory..."
+    podman stop vivy-comfyui
+fi
+
+# Restart ComfyUI when this script exits (Ctrl-C or error)
+cleanup() {
+    echo ""
+    if $COMFYUI_WAS_RUNNING; then
+        echo "[vram] Restarting vivy-comfyui..."
+        podman start vivy-comfyui
+    fi
+}
+trap cleanup EXIT
+
 # ── Start server ─────────────────────────────────────────────────────────────
 echo "[server] Starting Z-Image-Turbo API on port $PORT..."
 echo "[server] POST http://vivy:$PORT/generate"
 echo "[server] GET  http://vivy:$PORT/health"
 echo "[server] Press Ctrl-C to stop."
 
-ZIMAGE_MODEL="$MODEL" exec "$VENV/bin/python" -m uvicorn \
+ZIMAGE_MODEL="$MODEL" "$VENV/bin/python" -m uvicorn \
     --app-dir "$(dirname "$SCRIPT")" \
     zimage_server:app \
     --host 0.0.0.0 \
