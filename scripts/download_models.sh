@@ -1,71 +1,50 @@
 #!/usr/bin/env bash
 # Download Tongyi-MAI/Z-Image-Turbo into ComfyUI's model tree.
-# Run this once from the repo root before starting the stack:
+# Run this from the repo root (container must be running):
 #   bash scripts/download_models.sh
 #
 # Optional env vars:
 #   HF_TOKEN   — HuggingFace token (required if the repo is gated)
-#   MODEL_DIR  — override default ./data/comfyui/models
+#   CONTAINER  — container name (default: vivy-comfyui)
 set -euo pipefail
 
-MODEL_DIR="${MODEL_DIR:-./data/comfyui/models}"
+CONTAINER="${CONTAINER:-vivy-comfyui}"
+MODEL_DEST="/opt/ComfyUI/models/checkpoints/Z-Image-Turbo"
 
-# ── Ensure the full ComfyUI model tree exists ────────────────────────────────
-mkdir -p \
-    "$MODEL_DIR/checkpoints" \
-    "$MODEL_DIR/clip" \
-    "$MODEL_DIR/vae" \
-    "$MODEL_DIR/unet" \
-    "$MODEL_DIR/loras" \
-    "$MODEL_DIR/controlnet" \
-    "$MODEL_DIR/upscale_models"
-
-# ── Resolve the HF download command ─────────────────────────────────────────
-# huggingface-cli was deprecated in huggingface_hub >= 0.27; the binary is
-# now called `hf`.  Try `hf` first, fall back to `huggingface-cli`, install
-# via pipx if neither exists.
-if command -v hf &>/dev/null; then
-    HF_CMD="hf"
-elif command -v huggingface-cli &>/dev/null; then
-    HF_CMD="huggingface-cli"
-else
-    if command -v pipx &>/dev/null; then
-        echo "[info] hf not found — installing huggingface_hub via pipx..."
-        pipx install "huggingface_hub[cli]"
-        pipx ensurepath
-        # pipx puts binaries in ~/.local/bin; reload PATH for this session
-        export PATH="$HOME/.local/bin:$PATH"
-        HF_CMD="hf"
-    else
-        echo "[error] Neither hf/huggingface-cli nor pipx found."
-        echo "        Install pipx first:  sudo apt install pipx && pipx ensurepath"
-        exit 1
-    fi
+# ── Verify the container is running ─────────────────────────────────────────
+if ! podman ps --format '{{.Names}}' | grep -q "^${CONTAINER}$"; then
+    echo "[error] Container '${CONTAINER}' is not running."
+    echo "        Start it first:  podman-compose up -d"
+    exit 1
 fi
 
-echo "[info] Using HF command: $HF_CMD"
+echo "[info] Downloading Tongyi-MAI/Z-Image-Turbo → ${CONTAINER}:${MODEL_DEST}"
 
-# ── Optional auth ────────────────────────────────────────────────────────────
-if [[ -n "${HF_TOKEN:-}" ]]; then
-    "$HF_CMD" auth login --token "$HF_TOKEN"
-fi
+# Run the download as uid 1000 inside the container so it has write access to
+# the bind-mounted model directories (host ownership was set by podman unshare).
+podman exec --user user "${CONTAINER}" \
+    /opt/environments/python/comfyui/bin/python - <<PYEOF
+import os
+from huggingface_hub import snapshot_download
 
-# ── Download Z-Image-Turbo ───────────────────────────────────────────────────
-DEST="$MODEL_DIR/checkpoints/Z-Image-Turbo"
-echo "[info] Downloading Tongyi-MAI/Z-Image-Turbo → $DEST"
+token = os.environ.get("HF_TOKEN", "")
+if token:
+    from huggingface_hub import login
+    login(token=token)
 
-"$HF_CMD" download Tongyi-MAI/Z-Image-Turbo \
-    --local-dir "$DEST" \
-    --exclude "*.gitattributes" "*.md"
+snapshot_download(
+    repo_id="Tongyi-MAI/Z-Image-Turbo",
+    local_dir="${MODEL_DEST}",
+    ignore_patterns=["*.gitattributes", "README.md"],
+)
+print("[done] Download complete: ${MODEL_DEST}")
+PYEOF
 
-echo ""
-echo "[done] Files saved to $DEST"
 echo ""
 echo "Layout hint — Z-Image-Turbo uses a FLUX-like architecture."
-echo "If ComfyUI cannot load the checkpoint directly, reorganise like so:"
-echo ""
-echo "  Diffusion model .safetensors  →  $MODEL_DIR/unet/"
-echo "  VAE .safetensors              →  $MODEL_DIR/vae/"
-echo "  CLIP / T5 text encoders       →  $MODEL_DIR/clip/"
-echo ""
-echo "Then use the 'Load Diffusion Model' node instead of 'Load Checkpoint'."
+echo "If ComfyUI cannot load it via 'Load Checkpoint', files may need"
+echo "to be reorganised:"
+echo "  Diffusion model  →  /opt/ComfyUI/models/unet/"
+echo "  VAE              →  /opt/ComfyUI/models/vae/"
+echo "  CLIP / T5        →  /opt/ComfyUI/models/clip/"
+echo "Then use 'Load Diffusion Model' node instead of 'Load Checkpoint'."
