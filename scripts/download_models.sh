@@ -22,8 +22,14 @@ mkdir -p \
 
 # ── Check for huggingface-cli ────────────────────────────────────────────────
 if ! command -v huggingface-cli &>/dev/null; then
-    echo "[info] huggingface-cli not found — installing huggingface_hub..."
-    pip install -q "huggingface_hub[cli]"
+    if command -v pipx &>/dev/null; then
+        echo "[info] huggingface-cli not found — installing via pipx..."
+        pipx install "huggingface_hub[cli]"
+    else
+        echo "[error] Neither huggingface-cli nor pipx found."
+        echo "        Install pipx first:  sudo apt install pipx && pipx ensurepath"
+        exit 1
+    fi
 fi
 
 # ── Optional auth ────────────────────────────────────────────────────────────
