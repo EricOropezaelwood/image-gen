@@ -15,14 +15,13 @@ services:
     ports:
       - "8188:8188"
     volumes:
-      # :U — Podman chowns the source dir to the container's process uid/gid
-      # (uid 1000 / gid 1111) in the rootless user namespace, so the
-      # container's non-root 'user' process can write to these bind mounts.
-      - ./data/comfyui/models:/opt/ComfyUI/models:U
-      - ./data/comfyui/output:/opt/ComfyUI/output:U
-      - ./data/comfyui/input:/opt/ComfyUI/input:U
-      - ./data/comfyui/user:/opt/ComfyUI/user:U
-      - ./data/comfyui/custom_nodes:/opt/ComfyUI/custom_nodes:U
+      # Ownership must be set with podman unshare before first start.
+      # Run:  bash scripts/setup.sh
+      - ./data/comfyui/models:/opt/ComfyUI/models
+      - ./data/comfyui/output:/opt/ComfyUI/output
+      - ./data/comfyui/input:/opt/ComfyUI/input
+      - ./data/comfyui/user:/opt/ComfyUI/user
+      - ./data/comfyui/custom_nodes:/opt/ComfyUI/custom_nodes
     # CDI passthrough — never use x-podman.cdi_devices here
     devices:
       - nvidia.com/gpu=all
