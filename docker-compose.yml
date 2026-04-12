@@ -24,10 +24,11 @@ services:
     devices:
       - nvidia.com/gpu=all
     networks:
-      - vivy-net
+      - vivy_vivy-net
 
-# vivy-net must already exist (created by the main Vivy Server stack).
-# If starting fresh: podman network create vivy-net
+# vivy_vivy-net is created by the main Vivy Server stack (podman-compose
+# prefixes the project directory name).  If starting fresh:
+#   podman network create vivy_vivy-net
 networks:
-  vivy-net:
+  vivy_vivy-net:
     external: true
