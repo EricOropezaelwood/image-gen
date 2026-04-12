@@ -1,11 +1,11 @@
 # image-gen
 
-Vivy server image generation stack. Two independent tools:
+Vivy server image generation stack. Three independent tools:
 
-- **ComfyUI** — SDXL and FLUX.1-schnell, accessible at `http://vivy:8188`
+- **ComfyUI** — SDXL, FLUX.1-schnell, and HunyuanVideo 1.5 (video), accessible at `http://vivy:8188`
 - **Z-Image-Turbo** — Tongyi-MAI's model, accessed via a local Mac client that calls a server on Vivy
 
-> Both share the same 16 GB GPU and **cannot run at the same time**. The Z-Image start script handles this automatically (pauses ComfyUI, restarts it on exit).
+> All tools share the same 16 GB GPU and **cannot run at the same time**. The Z-Image start script handles this automatically (pauses ComfyUI, restarts it on exit).
 
 ---
 
@@ -116,6 +116,39 @@ optional:
 curl http://vivy:8190/health
 # {"status":"ok","model_loaded":true}
 ```
+
+---
+
+## HunyuanVideo 1.5 (Text-to-Video)
+
+Runs inside ComfyUI via the ComfyUI-GGUF custom node.
+
+### Setup (run once on Vivy)
+
+```bash
+# 1. Install ComfyUI-GGUF custom node (restarts the container)
+bash scripts/hunyuan_install.sh
+
+# 2. Download models (~17.5 GB)
+bash scripts/hunyuan_download.sh
+```
+
+### Generate a video
+
+Open `http://vivy:8188`, then **File → Load → `workflows/hunyuan_720p.json`**.
+
+| Setting | Value |
+|---|---|
+| Model | `unet/hunyuanvideo1.5_720p_t2v-Q4_K_M.gguf` |
+| Text encoder 1 | `text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors` |
+| Text encoder 2 | `text_encoders/byt5_small_glyphxl_fp16.safetensors` |
+| VAE | `vae/hunyuanvideo15_vae_fp16.safetensors` |
+| Steps | 30–50 |
+| CFG | 1.0 |
+| Resolution | 1280×720 |
+| Frames | 25, 49, or 85 (must be `4n + 1`) |
+
+Videos are saved to `/mnt/wdc4tb/vivy/comfyui-data/output/`. Generation is slow — expect several minutes per clip.
 
 ---
 
