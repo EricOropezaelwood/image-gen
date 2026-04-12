@@ -1,0 +1,33 @@
+services:
+  comfyui:
+    image: ghcr.io/ai-dock/comfyui:latest-cuda
+    container_name: vivy-comfyui
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - AUTO_UPDATE=false
+      - CF_QUICK_TUNNELS=false
+      - WEB_ENABLE_AUTH=false
+      # Flags passed directly to main.py — listen on all interfaces so the
+      # host can reach port 8188
+      - COMFYUI_FLAGS=--listen 0.0.0.0
+    ports:
+      - "8188:8188"
+    volumes:
+      - ./data/comfyui/models:/opt/ComfyUI/models
+      - ./data/comfyui/output:/opt/ComfyUI/output
+      - ./data/comfyui/input:/opt/ComfyUI/input
+      - ./data/comfyui/user:/opt/ComfyUI/user
+      - ./data/comfyui/custom_nodes:/opt/ComfyUI/custom_nodes
+    # CDI passthrough — never use x-podman.cdi_devices here
+    devices:
+      - nvidia.com/gpu=all
+    networks:
+      - vivy-net
+
+# vivy-net must already exist (created by the main Vivy Server stack).
+# If starting fresh: podman network create vivy-net
+networks:
+  vivy-net:
+    external: true

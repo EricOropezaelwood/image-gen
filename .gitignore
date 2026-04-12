@@ -1,3 +1,6 @@
+# Persistent container data (models, outputs — can be many GB)
+data/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
