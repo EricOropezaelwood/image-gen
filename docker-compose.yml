@@ -1,6 +1,7 @@
 services:
   comfyui:
-    image: ghcr.io/ai-dock/comfyui:latest-cuda
+    build: .
+    image: vivy-comfyui:local
     container_name: vivy-comfyui
     restart: unless-stopped
     environment:
