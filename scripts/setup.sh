@@ -15,7 +15,7 @@ set -euo pipefail
 
 echo "[setup] Creating ComfyUI data directories..."
 mkdir -p data/comfyui/{output,input,user,custom_nodes}
-mkdir -p data/comfyui/models/{checkpoints,loras,vae,vae_approx,unet,controlnet,\
+mkdir -p data/comfyui/models/{checkpoints,loras,vae,vae_approx,unet,diffusion_models,controlnet,\
 upscale_models,clip,text_encoders,gligen,diffusers,hypernetworks,embeddings,style_models}
 
 echo "[setup] Chowning to container uid 1000 / gid 1111 via podman unshare..."
