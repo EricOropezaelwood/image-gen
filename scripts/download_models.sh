@@ -20,7 +20,7 @@ fi
 
 echo "[info] Downloading models inside '${CONTAINER}'..."
 
-podman exec -i --user user "${CONTAINER}" \
+podman exec -i -e "HF_TOKEN=${HF_TOKEN:-}" --user user "${CONTAINER}" \
     /opt/environments/python/comfyui/bin/python - <<'PYEOF'
 import os
 from huggingface_hub import hf_hub_download
