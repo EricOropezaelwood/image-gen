@@ -12,7 +12,9 @@ services:
       - WEB_ENABLE_AUTH=false
       # Flags passed directly to main.py — listen on all interfaces so the
       # host can reach port 8188
-      - COMFYUI_FLAGS=--listen 0.0.0.0
+      # --lowvram enables sequential CPU offloading so large models (e.g.
+      # HunyuanVideo 26 GB BF16) don't OOM on the 16 GB RTX 5060 Ti.
+      - COMFYUI_FLAGS=--listen 0.0.0.0 --lowvram
     ports:
       - "8188:8188"
     volumes:

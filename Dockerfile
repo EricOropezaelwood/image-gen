@@ -6,3 +6,12 @@ FROM ghcr.io/ai-dock/comfyui:latest-cuda
 RUN /opt/environments/python/comfyui/bin/pip install --upgrade \
     torch torchvision torchaudio \
     --index-url https://download.pytorch.org/whl/cu128
+
+# Pull latest ComfyUI (adds EmptyHunyuanLatentVideo and other new nodes)
+# and install its updated dependencies (sqlalchemy, alembic, etc.)
+RUN cd /opt/ComfyUI \
+    && git fetch origin \
+    && git checkout master \
+    && git pull origin master \
+    && /opt/environments/python/comfyui/bin/pip install --upgrade \
+       -r /opt/ComfyUI/requirements.txt
