@@ -66,9 +66,9 @@ def dl_flat(repo, repo_path, dest_dir, label):
     print(f"  → {dest}")
 
 # ── Transformer (GGUF Q4_K_M — fits in 16 GB VRAM without offloading) ────────
-dl_direct(
+dl_flat(
     "jayn7/HunyuanVideo-1.5_T2V_720p-GGUF",
-    "hunyuanvideo1.5_720p_t2v-Q4_K_M.gguf",
+    "720p/hunyuanvideo1.5_720p_t2v-Q4_K_M.gguf",
     f"{BASE}/unet",
     "1/5 Transformer GGUF Q4_K_M (5.09 GB)",
 )
