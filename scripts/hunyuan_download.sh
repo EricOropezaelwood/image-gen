@@ -96,12 +96,19 @@ dl_flat(
     "4/5 VAE (2.52 GB)",
 )
 
-# ── 1080p Super Resolution upscaler (second-pass model) ──────────────────────
+# ── 1080p Super Resolution upscaler + latent upsampler ───────────────────────
 dl_flat(
     "Comfy-Org/HunyuanVideo_1.5_repackaged",
     "split_files/diffusion_models/hunyuanvideo1.5_1080p_sr_distilled_fp16.safetensors",
     f"{BASE}/diffusion_models",
-    "5/5 1080p SR upscaler (0.47 GB)",
+    "5/6 1080p SR upscaler (0.47 GB)",
+)
+
+dl_flat(
+    "Comfy-Org/HunyuanVideo_1.5_repackaged",
+    "split_files/latent_upscale_models/hunyuanvideo15_latent_upsampler_1080p.safetensors",
+    f"{BASE}/latent_upscale_models",
+    "6/6 Latent upsampler 1080p (0.19 GB)",
 )
 
 print("""
