@@ -22,14 +22,16 @@ fi
 echo "[info] Downloading HunyuanVideo models inside '${CONTAINER}'..."
 echo "[info] Total download: ~30 GB — the diffusion model alone is 26 GB"
 
-# HF_HUB_CACHE is redirected to the 4TB-backed models directory so the
-# huggingface download cache never touches the OS drive.
+# HF_HUB_CACHE is redirected into the 4TB-backed models dir so nothing
+# large ever touches the OS drive.
 podman exec -i \
     -e "HF_TOKEN=${HF_TOKEN:-}" \
     -e "HF_HUB_CACHE=/opt/ComfyUI/models/.hf_cache" \
     --user user "${CONTAINER}" \
     /opt/environments/python/comfyui/bin/python - <<'PYEOF'
 import os
+import shutil
+from pathlib import Path
 from huggingface_hub import hf_hub_download
 
 token = os.environ.get("HF_TOKEN", "")
@@ -39,10 +41,19 @@ if token:
 
 BASE = "/opt/ComfyUI/models"
 
-def dl(repo, filename, dest_dir, label):
-    print(f"\n[{label}] {repo}/{filename}")
-    hf_hub_download(repo_id=repo, filename=filename, local_dir=dest_dir)
-    print(f"  → {dest_dir}/{filename}")
+def dl(repo, repo_path, dest_dir, label):
+    """Download from HF and place at a flat path in dest_dir."""
+    filename = Path(repo_path).name
+    dest = os.path.join(dest_dir, filename)
+    if os.path.exists(dest):
+        print(f"  [skip] {filename} already exists")
+        return
+    print(f"\n[{label}] {filename}")
+    # hf_hub_download caches to HF_HUB_CACHE (4TB drive), returns cache path
+    cached = hf_hub_download(repo_id=repo, filename=repo_path)
+    os.makedirs(dest_dir, exist_ok=True)
+    shutil.copy2(cached, dest)
+    print(f"  → {dest}")
 
 # ── Text encoders ─────────────────────────────────────────────────────────────
 dl(
@@ -78,13 +89,7 @@ dl(
 print("""
 [done] All HunyuanVideo models downloaded.
 
-In ComfyUI (http://vivy:8188):
-  Workflows → Browse Templates → search "hunyuan" → Text-to-Video
-  Or drag a workflow image from the docs into the canvas.
-
-Verify these nodes:
-  DualCLIPLoader       → clip_l.safetensors + llava_llama3_fp8_scaled.safetensors
-  Load Diffusion Model → hunyuan_video_t2v_720p_bf16.safetensors
-  Load VAE             → hunyuan_video_vae_bf16.safetensors
+Reload the workflow in ComfyUI — the missing model errors should be gone.
+Hit Queue (Ctrl+Enter) to generate.
 """)
 PYEOF
