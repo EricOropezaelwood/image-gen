@@ -121,7 +121,9 @@ curl http://vivy:8190/health
 
 ## HunyuanVideo 1.5 (Text-to-Video)
 
-Runs inside ComfyUI via the ComfyUI-GGUF custom node.
+Runs inside ComfyUI via the ComfyUI-GGUF custom node. Uses the quantized GGUF
+transformer (5 GB) so it fits comfortably in 16 GB VRAM without offloading —
+significantly faster and better quality than the original HunyuanVideo BF16.
 
 ### Setup (run once on Vivy)
 
@@ -129,26 +131,31 @@ Runs inside ComfyUI via the ComfyUI-GGUF custom node.
 # 1. Install ComfyUI-GGUF custom node (restarts the container)
 bash scripts/hunyuan_install.sh
 
-# 2. Download models (~17.5 GB)
+# 2. Download models (~18 GB total)
 bash scripts/hunyuan_download.sh
 ```
 
 ### Generate a video
 
-Open `http://vivy:8188`, then **File → Load → `workflows/hunyuan_720p.json`**.
+Open `http://vivy:8188`, then **Workflows → Browse Templates → search "hunyuan 1.5" → Text-to-Video**.
 
-| Setting | Value |
+| Node | Value |
 |---|---|
-| Model | `unet/hunyuanvideo1.5_720p_t2v-Q4_K_M.gguf` |
-| Text encoder 1 | `text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors` |
-| Text encoder 2 | `text_encoders/byt5_small_glyphxl_fp16.safetensors` |
-| VAE | `vae/hunyuanvideo15_vae_fp16.safetensors` |
-| Steps | 30–50 |
-| CFG | 1.0 |
-| Resolution | 1280×720 |
+| UNETLoaderGGUF | `unet/hunyuanvideo1.5_720p_t2v-Q4_K_M.gguf` |
+| DualCLIPLoader (1) | `text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors` |
+| DualCLIPLoader (2) | `text_encoders/byt5_small_glyphxl_fp16.safetensors` |
+| Load VAE | `vae/hunyuanvideo15_vae_fp16.safetensors` |
+| Steps | 20–30 |
+| CFG | 6.0 |
+| Resolution | 848×480 (720p) |
 | Frames | 25, 49, or 85 (must be `4n + 1`) |
 
-Videos are saved to `/mnt/wdc4tb/vivy/comfyui-data/output/`. Generation is slow — expect several minutes per clip.
+### 1080p upscaling (optional second pass)
+
+Add the SR node after generation using `diffusion_models/hunyuanvideo1.5_1080p_sr_distilled_fp16.safetensors`.
+Settings: steps 6–8, CFG 1.0.
+
+Videos are saved to `/mnt/wdc4tb/vivy/comfyui-data/output/`.
 
 ---
 

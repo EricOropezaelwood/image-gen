@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
-# Download HunyuanVideo (original) model files into the running vivy-comfyui container.
+# Download HunyuanVideo 1.5 GGUF model files into the running vivy-comfyui container.
+# Run hunyuan_install.sh first to set up the ComfyUI-GGUF custom node.
 #
-# Downloads (~30 GB total):
-#   - Text encoder:  clip_l.safetensors                      (0.25 GB) → text_encoders/
-#   - Text encoder:  llava_llama3_fp8_scaled.safetensors     (4.9 GB)  → text_encoders/
-#   - VAE:           hunyuan_video_vae_bf16.safetensors       (1.0 GB)  → vae/
-#   - Diffusion:     hunyuan_video_t2v_720p_bf16.safetensors (26 GB)   → diffusion_models/
+# Downloads (~17.9 GB total):
+#   - Transformer:   hunyuanvideo1.5_720p_t2v-Q4_K_M.gguf          (5.09 GB) → unet/
+#   - Text encoder:  qwen_2.5_vl_7b_fp8_scaled.safetensors          (9.38 GB) → text_encoders/
+#   - Text encoder:  byt5_small_glyphxl_fp16.safetensors             (0.44 GB) → text_encoders/
+#   - VAE:           hunyuanvideo15_vae_fp16.safetensors              (2.52 GB) → vae/
+#   - SR upscaler:   hunyuanvideo1.5_1080p_sr_distilled_fp16.st...   (0.47 GB) → diffusion_models/
 #
 # Usage: bash scripts/hunyuan_download.sh
 #        HF_TOKEN=hf_xxx bash scripts/hunyuan_download.sh
@@ -19,11 +21,9 @@ if ! podman ps --format '{{.Names}}' | grep -q "^${CONTAINER}$"; then
     exit 1
 fi
 
-echo "[info] Downloading HunyuanVideo models inside '${CONTAINER}'..."
-echo "[info] Total download: ~30 GB — the diffusion model alone is 26 GB"
+echo "[info] Downloading HunyuanVideo 1.5 GGUF models inside '${CONTAINER}'..."
+echo "[info] Total download: ~18 GB"
 
-# HF_HUB_CACHE is redirected into the 4TB-backed models dir so nothing
-# large ever touches the OS drive.
 podman exec -i \
     -e "HF_TOKEN=${HF_TOKEN:-}" \
     -e "HF_HUB_CACHE=/opt/ComfyUI/models/.hf_cache" \
@@ -41,55 +41,86 @@ if token:
 
 BASE = "/opt/ComfyUI/models"
 
-def dl(repo, repo_path, dest_dir, label):
-    """Download from HF and place at a flat path in dest_dir."""
+def dl_direct(repo, filename, dest_dir, label):
+    """For files with no subdirectory prefix in the repo — download straight to dest."""
+    dest = os.path.join(dest_dir, filename)
+    if os.path.exists(dest):
+        print(f"  [skip] {filename} already exists")
+        return
+    print(f"\n[{label}] {filename}")
+    os.makedirs(dest_dir, exist_ok=True)
+    hf_hub_download(repo_id=repo, filename=filename, local_dir=dest_dir)
+    print(f"  → {dest}")
+
+def dl_flat(repo, repo_path, dest_dir, label):
+    """For files nested under split_files/... in the repo — cache then copy to flat path."""
     filename = Path(repo_path).name
     dest = os.path.join(dest_dir, filename)
     if os.path.exists(dest):
         print(f"  [skip] {filename} already exists")
         return
     print(f"\n[{label}] {filename}")
-    # hf_hub_download caches to HF_HUB_CACHE (4TB drive), returns cache path
     cached = hf_hub_download(repo_id=repo, filename=repo_path)
     os.makedirs(dest_dir, exist_ok=True)
     shutil.copy2(cached, dest)
     print(f"  → {dest}")
 
-# ── Text encoders ─────────────────────────────────────────────────────────────
-dl(
-    "Comfy-Org/HunyuanVideo_repackaged",
-    "split_files/text_encoders/clip_l.safetensors",
-    f"{BASE}/text_encoders",
-    "1/4 CLIP-L text encoder (0.25 GB)",
+# ── Transformer (GGUF Q4_K_M — fits in 16 GB VRAM without offloading) ────────
+dl_direct(
+    "jayn7/HunyuanVideo-1.5_T2V_720p-GGUF",
+    "hunyuanvideo1.5_720p_t2v-Q4_K_M.gguf",
+    f"{BASE}/unet",
+    "1/5 Transformer GGUF Q4_K_M (5.09 GB)",
 )
 
-dl(
-    "Comfy-Org/HunyuanVideo_repackaged",
-    "split_files/text_encoders/llava_llama3_fp8_scaled.safetensors",
+# ── Text encoders ─────────────────────────────────────────────────────────────
+dl_flat(
+    "Comfy-Org/HunyuanVideo_1.5_repackaged",
+    "split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors",
     f"{BASE}/text_encoders",
-    "2/4 LLaVA-LLaMA3 text encoder FP8 (4.9 GB)",
+    "2/5 Qwen 2.5 VL FP8 text encoder (9.38 GB)",
+)
+
+dl_flat(
+    "Comfy-Org/HunyuanVideo_1.5_repackaged",
+    "split_files/text_encoders/byt5_small_glyphxl_fp16.safetensors",
+    f"{BASE}/text_encoders",
+    "3/5 ByT5 text encoder (0.44 GB)",
 )
 
 # ── VAE ───────────────────────────────────────────────────────────────────────
-dl(
-    "Comfy-Org/HunyuanVideo_repackaged",
-    "split_files/vae/hunyuan_video_vae_bf16.safetensors",
+dl_flat(
+    "Comfy-Org/HunyuanVideo_1.5_repackaged",
+    "split_files/vae/hunyuanvideo15_vae_fp16.safetensors",
     f"{BASE}/vae",
-    "3/4 VAE (1.0 GB)",
+    "4/5 VAE (2.52 GB)",
 )
 
-# ── Diffusion model ───────────────────────────────────────────────────────────
-dl(
-    "Comfy-Org/HunyuanVideo_repackaged",
-    "split_files/diffusion_models/hunyuan_video_t2v_720p_bf16.safetensors",
+# ── 1080p Super Resolution upscaler (second-pass model) ──────────────────────
+dl_flat(
+    "Comfy-Org/HunyuanVideo_1.5_repackaged",
+    "split_files/diffusion_models/hunyuanvideo1.5_1080p_sr_distilled_fp16.safetensors",
     f"{BASE}/diffusion_models",
-    "4/4 Diffusion model BF16 (26 GB) — this will take a while",
+    "5/5 1080p SR upscaler (0.47 GB)",
 )
 
 print("""
-[done] All HunyuanVideo models downloaded.
+[done] All HunyuanVideo 1.5 models downloaded.
 
-Reload the workflow in ComfyUI — the missing model errors should be gone.
-Hit Queue (Ctrl+Enter) to generate.
+Next steps in ComfyUI (http://vivy:8188):
+  1. Run:  bash scripts/hunyuan_install.sh  (if not already done)
+  2. Workflows → Browse Templates → search "hunyuan 1.5" → Text-to-Video
+
+Node settings:
+  UNETLoaderGGUF       → hunyuanvideo1.5_720p_t2v-Q4_K_M.gguf
+  DualCLIPLoader       → qwen_2.5_vl_7b_fp8_scaled.safetensors
+                       → byt5_small_glyphxl_fp16.safetensors
+  Load VAE             → hunyuanvideo15_vae_fp16.safetensors
+  SR model (optional)  → hunyuanvideo1.5_1080p_sr_distilled_fp16.safetensors
+
+Key settings:
+  Steps    : 20-30 (faster than original HunyuanVideo)
+  CFG      : 6.0
+  Frames   : 25, 49, or 85 (must be 4n+1)
 """)
 PYEOF
