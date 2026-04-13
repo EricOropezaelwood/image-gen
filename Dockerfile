@@ -15,3 +15,7 @@ RUN cd /opt/ComfyUI \
     && git pull origin master \
     && /opt/environments/python/comfyui/bin/pip install --upgrade \
        -r /opt/ComfyUI/requirements.txt
+
+# gguf package required by ComfyUI-GGUF custom node (UNETLoaderGGUF).
+# Must be in the image so it survives container recreates.
+RUN /opt/environments/python/comfyui/bin/pip install gguf
