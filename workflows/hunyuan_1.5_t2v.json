@@ -401,7 +401,7 @@
     },
     {
       "id": 12,
-      "type": "UNETLoaderGGUF",
+      "type": "UnetLoaderGGUF",
       "pos": [
         -620,
         50
