@@ -253,6 +253,29 @@ Videos are saved to `/mnt/wdc4tb/vivy/comfyui-data/output/`.
 
 ---
 
+## Housekeeping — pruning old output
+
+Generated images/videos accumulate in `data/comfyui/output/`. They're owned by
+the container's user (rootless Podman UID mapping), so a plain `rm` on the host
+fails with *permission denied* — delete them through the container instead:
+
+```bash
+DRY_RUN=1 bash scripts/cleanup_output.sh   # preview what's older than 14 days
+bash scripts/cleanup_output.sh             # delete files older than 14 days
+DAYS=7 bash scripts/cleanup_output.sh      # custom retention window
+DAYS=0 bash scripts/cleanup_output.sh      # clear (almost) everything
+```
+
+To prune automatically, add a daily cron job on Vivy (`crontab -e`):
+
+```cron
+# Prune ComfyUI output every day at 3am, keeping the last 14 days
+0 3 * * * cd ~/Coding/image-gen && bash scripts/cleanup_output.sh >> ~/comfyui-cleanup.log 2>&1
+```
+
+Save anything you want to keep first — right-click → **Save Image** in ComfyUI,
+or copy it off Vivy before it ages out.
+
 ## Troubleshooting
 
 **`CUDA out of memory`** — another model is still resident in VRAM. In ComfyUI, use **Manager → Unload Models** (or restart the container) before switching to a heavier workflow.
