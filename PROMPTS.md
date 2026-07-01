@@ -1,6 +1,7 @@
 # Prompt Log
 
 A running record of prompts that worked well and the reasoning behind them.
+Paste these into the Z-Image workflow in ComfyUI (`http://vivy:8188`).
 
 ---
 
@@ -8,12 +9,11 @@ A running record of prompts that worked well and the reasoning behind them.
 
 ### Tokyo Tower at Night
 
-```bash
-python client/zimage.py \
-  "photograph of tokyo tower at night, tack sharp, perfectly in focus, f/11 aperture, tripod shot, tokyo tower lit up orange, illuminated skyline, city lights reflecting on buildings, slight elevation angle" \
-  --negative-prompt "blurry, bokeh, defocused, unfocused, soft focus, lens blur, motion blur, out of focus, depth of field, illustration, graphic, overexposed" \
-  --width 1280 --height 720
-```
+**Prompt:** photograph of tokyo tower at night, tack sharp, perfectly in focus, f/11 aperture, tripod shot, tokyo tower lit up orange, illuminated skyline, city lights reflecting on buildings, slight elevation angle
+
+**Negative:** blurry, bokeh, defocused, unfocused, soft focus, lens blur, motion blur, out of focus, depth of field, illustration, graphic, overexposed
+
+**Size:** 1280×720
 
 **What worked:**
 
@@ -34,12 +34,11 @@ python client/zimage.py \
 
 ### Library Window, Evening
 
-```bash
-python client/zimage.py \
-  "photograph taken inside a cozy library, looking toward a large floor-to-ceiling window in the evening, lush green potted plants and trailing vines framing the window, warm amber lamp light illuminating dark wood bookshelves and leather reading chair in foreground, blue-hour evening sky visible through window glass, wooden window frame, scattered books on side table, dust motes in lamplight, tack sharp, f/8 aperture, focus on bookshelves and chair" \
-  --negative-prompt "blurry, bokeh, defocused, unfocused, soft focus, lens blur, motion blur, out of focus, illustration, graphic, overexposed, modern, neon, people, figures" \
-  --width 1280 --height 720
-```
+**Prompt:** photograph taken inside a cozy library, looking toward a large floor-to-ceiling window in the evening, lush green potted plants and trailing vines framing the window, warm amber lamp light illuminating dark wood bookshelves and leather reading chair in foreground, blue-hour evening sky visible through window glass, wooden window frame, scattered books on side table, dust motes in lamplight, tack sharp, f/8 aperture, focus on bookshelves and chair
+
+**Negative:** blurry, bokeh, defocused, unfocused, soft focus, lens blur, motion blur, out of focus, illustration, graphic, overexposed, modern, neon, people, figures
+
+**Size:** 1280×720
 
 **What worked:**
 
@@ -60,12 +59,11 @@ python client/zimage.py \
 
 ### Coffee Shop Window, Morning
 
-```bash
-python client/zimage.py \
-  "photograph taken inside a cozy coffee shop looking out the window, morning, warm golden sunlight streaming through glass, sharp coffee cup and open journal on wooden table in foreground, lively city street with pedestrians and trees outside, condensation on window, tack sharp, f/8 aperture, focus on coffee cup" \
-  --negative-prompt "blurry, bokeh, defocused, unfocused, soft focus, lens blur, motion blur, out of focus, illustration, graphic, overexposed, dark, night, pens, pencils, cups, glasses, objects, tripod, camera, equipment" \
-  --width 1280 --height 720
-```
+**Prompt:** photograph taken inside a cozy coffee shop looking out the window, morning, warm golden sunlight streaming through glass, sharp coffee cup and open journal on wooden table in foreground, lively city street with pedestrians and trees outside, condensation on window, tack sharp, f/8 aperture, focus on coffee cup
+
+**Negative:** blurry, bokeh, defocused, unfocused, soft focus, lens blur, motion blur, out of focus, illustration, graphic, overexposed, dark, night, pens, pencils, cups, glasses, objects, tripod, camera, equipment
+
+**Size:** 1280×720
 
 **What worked:**
 
