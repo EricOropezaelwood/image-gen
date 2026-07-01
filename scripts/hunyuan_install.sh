@@ -15,13 +15,17 @@ fi
 
 # ── Install ComfyUI-GGUF custom node ─────────────────────────────────────────
 GGUF_DIR="/opt/ComfyUI/custom_nodes/ComfyUI-GGUF"
+# Pinned commit for reproducibility (ComfyUI-GGUF publishes no release tags).
+GGUF_REF="6ea2651e7df6"
 
 if podman exec "${CONTAINER}" test -d "${GGUF_DIR}"; then
     echo "[info] ComfyUI-GGUF already installed, skipping clone."
 else
-    echo "[install] Cloning ComfyUI-GGUF..."
+    echo "[install] Cloning ComfyUI-GGUF @ ${GGUF_REF}..."
     podman exec --user user "${CONTAINER}" \
         git clone https://github.com/city96/ComfyUI-GGUF "${GGUF_DIR}"
+    podman exec --user user "${CONTAINER}" \
+        git -C "${GGUF_DIR}" checkout "${GGUF_REF}"
 fi
 
 echo "[install] Installing gguf Python package..."
