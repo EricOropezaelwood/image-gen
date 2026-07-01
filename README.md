@@ -5,6 +5,7 @@ Vivy server image generation stack. Everything runs inside a single **ComfyUI** 
 - **Z-Image-Turbo** — Tongyi-MAI's 6B model. Fast, photorealistic — the default pick.
 - **FLUX.2 [klein]** — 4B, best prompt adherence
 - **Qwen-Image** — the specialist for legible text *inside* images
+- **Anime** — NoobAI-XL / Illustrious-XL SDXL finetunes for illustrated/anime art
 - **HunyuanVideo 1.5** — text-to-video
 - **SDXL** / **FLUX.1-schnell** — older models, kept for their LoRA ecosystem
 
@@ -31,6 +32,7 @@ Then download whichever other models you want (all optional, in any order):
 bash scripts/flux2_download.sh        # FLUX.2 klein 4B — ~4.4 GB (reuses Z-Image encoder)
 bash scripts/hunyuan_install.sh       # ComfyUI-GGUF node — needed for Qwen-Image & Hunyuan
 bash scripts/qwen_image_download.sh   # Qwen-Image (text in images) — ~13 GB
+bash scripts/anime_download.sh        # NoobAI-XL + Illustrious-XL (anime) — ~14 GB
 bash scripts/download_models.sh       # legacy SDXL + FLUX.1-schnell
 ```
 
@@ -165,6 +167,49 @@ and swap the Load Diffusion Model node for **UNETLoaderGGUF**.
 | Sampler        | euler                                                 |
 | Scheduler      | simple                                                |
 | Size           | 1328×1328 (native) or 1024×1024                       |
+
+---
+
+## Anime (NoobAI-XL / Illustrious-XL)
+
+For anime/illustrated art, the general models above fall short — the anime scene
+runs on **SDXL finetunes** trained on Danbooru-tagged art. These are plain SDXL
+checkpoints, so they use the **same default Load Checkpoint workflow as SDXL base**
+(no extra nodes) and run easily on 16 GB.
+
+### Setup (run once on Vivy)
+
+```bash
+bash scripts/anime_download.sh   # ~14 GB (both checkpoints)
+```
+
+- **NoobAI-XL v1.1** — Illustrious finetune, broadest anime character knowledge
+- **Illustrious-XL v1.0** — clean neutral base
+
+### Generate images
+
+Use the default **Load Checkpoint** workflow and select one of the anime checkpoints.
+
+| Setting   | Value                                        |
+| --------- | -------------------------------------------- |
+| Checkpoint | `NoobAI-XL-v1.1.safetensors` (or Illustrious) |
+| Steps     | 24–28                                        |
+| CFG       | 5–7                                          |
+| Sampler   | euler_ancestral                              |
+| Scheduler | normal                                       |
+| Size      | 832×1216 (portrait) or 1024×1024             |
+
+**Prompt with Danbooru tags, not sentences.** Quality tags matter:
+
+```
+Positive: masterpiece, best quality, newest, absurdres, 1girl, solo,
+          silver hair, blue eyes, school uniform, cherry blossoms
+Negative: worst quality, low quality, lowres, jpeg artifacts,
+          bad anatomy, bad hands, extra digits, watermark, signature
+```
+
+> These finetunes are uncensored (typical of the anime-model scene) — lean on the
+> negative prompt to steer output.
 
 ---
 
