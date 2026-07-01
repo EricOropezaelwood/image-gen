@@ -34,6 +34,10 @@ bash scripts/hunyuan_install.sh       # ComfyUI-GGUF node — needed for Qwen-Im
 bash scripts/qwen_image_download.sh   # Qwen-Image (text in images) — ~13 GB
 bash scripts/anime_download.sh        # NoobAI-XL + Illustrious-XL (anime) — ~14 GB
 bash scripts/download_models.sh       # legacy SDXL + FLUX.1-schnell
+
+# Quality boost — hires upscale + face/hand detailer (works with any SDXL model)
+bash scripts/detailer_install.sh      # Impact-Pack custom nodes (restarts container)
+bash scripts/detailer_download.sh     # upscaler + detection models — ~140 MB
 ```
 
 The `data/` directory lives at `/mnt/wdc4tb/vivy/comfyui-data` with a symlink at `data/` in the repo root — models are stored on the 4 TB drive.
@@ -210,6 +214,50 @@ Negative: worst quality, low quality, lowres, jpeg artifacts,
 
 > These finetunes are uncensored (typical of the anime-model scene) — lean on the
 > negative prompt to steer output.
+
+---
+
+## Hires fix + FaceDetailer (quality boost)
+
+The single biggest quality jump for character art: generate at base resolution,
+**upscale**, then run a **FaceDetailer** pass that re-renders faces (and hands) at
+full detail. Works on top of any SDXL model — especially the anime checkpoints.
+
+### Setup (run once on Vivy)
+
+```bash
+bash scripts/detailer_install.sh    # Impact-Pack + Subpack nodes (restarts container)
+bash scripts/detailer_download.sh   # 4x-UltraSharp + face/hand YOLO models (~140 MB)
+```
+
+### Build the workflow
+
+Start from your working anime **Load Checkpoint** graph and extend it. (There's no
+prebuilt JSON in the repo because a hand-authored graph is fragile across node
+versions — assemble it once in the UI, then **Ctrl+S** to save it as `anime_hires`.)
+
+Chain, after the base `KSampler → VAE Decode`:
+
+1. **Upscale Image (using Model)** — model = `4x-UltraSharp`. Upscales 4×.
+2. **Upscale Image** (plain resize) — scale the 4× result *down* to your target,
+   e.g. **1248×1824** (≈1.5× the base 832×1216). 4× raw is too big to re-sample.
+3. **VAE Encode** → back to latent.
+4. **KSampler** (hires pass) — same model/prompt, **denoise 0.35–0.45**, steps ~20.
+5. **VAE Decode** → the upscaled image.
+6. **UltralyticsDetectorProvider** — `bbox/face_yolov8m.pt` → **FaceDetailer**
+   (feed it the image, model, clip, vae, positive, negative, and the detector).
+7. **Save Image**.
+
+**FaceDetailer settings:** guide_size 512, steps ~20, cfg 5–7, denoise **0.4**,
+sampler `euler_ancestral`. Higher denoise = more redraw (and more drift from the
+original face); 0.4 is a good balance.
+
+**Hands too:** add a second detector with `bbox/hand_yolov8s.pt` feeding another
+FaceDetailer after the first — this fixes the malformed-fingers problem directly.
+
+> If FaceDetailer errors on loading the `.pt` model (`weights_only` /
+> `WeightsUnpickler`), it's PyTorch's safe-load guard — update Impact-Subpack, or
+> set the node's loader to accept the ultralytics checkpoint.
 
 ---
 
