@@ -80,6 +80,31 @@ podman-compose down       # stop
 podman-compose logs -f    # tail logs
 ```
 
+### Freeing the GPU from Ollama
+
+Vivy's 16 GB GPU is shared with the `vivy-ollama` LLM service. Ollama is
+configured with `OLLAMA_KEEP_ALIVE=-1`, so it pins its model (e.g.
+`gemma4:26b`, ~15 GB) in VRAM **forever** — leaving nothing for image
+generation. Both models can't be resident at once.
+
+To temporarily evict the model from VRAM without stopping Ollama:
+
+```bash
+ssh vivy 'podman exec vivy-ollama ollama stop gemma4:26b'   # unload from GPU
+ssh vivy 'podman exec vivy-ollama ollama ps'                # confirm it's gone
+```
+
+This is non-destructive: the container keeps running and Ollama reloads the
+model automatically the next time its tool is called. Note that any request to
+Ollama will immediately re-claim the whole GPU — so unload it right before an
+image-gen session, and avoid using the LLM assistant mid-generation.
+
+Check what's holding VRAM at any time:
+
+```bash
+ssh vivy 'nvidia-smi --query-gpu=memory.used,memory.free --format=csv'
+```
+
 ---
 
 ## Z-Image-Turbo
